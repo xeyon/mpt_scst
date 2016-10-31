@@ -1,0 +1,78 @@
+BUG1:
+Description: mpt_scst doesn't have enable_target() and/or is_target_enabled() methords. This 
+is unsafe and can lead that initiators connected on the initialization time can see an 
+unexpected set of devices or no devices at all!
+Solution: create mpt_enable_tgt() and mpt_is_tgt_enabled() functions base on the context in 
+mpt_proc_target_write().
+
+BUG2:
+Description: scst: ERROR: Can't add session to sysfs. Using security group "mpt_scst" for 
+initiator ""
+Solution: during scst session registering, set initiator name to "[ioc_name]->
+[initiator_id_num]" in stmapp_tgt_command().
+
+BUG3:
+Description: unable to handle kernel NULL pointer dereference
+Solution: allocate memory for scst_cmd->cdb in function stmapp_pending_sense()
+
+BUG4:
+Description: mptbase: ioc0: ERROR - Doorbell INT timeout (count=4999), IntStatus=0!
+Sulution: add a spinlock tgt->priv->hw_lock to synchronize the access to the hardware.
+
+BUG5:
+Description: mptbase: ioc0: WARNING - IOC is in FAULT state (8112h)!!!
+Solution: change the use of mpt_free_msg_frame(_HANDLE_IOC_ID, priv->current_mf[index]) 
+into mpt_free_msg_frame(_HANDLE_IOC_ID, priv->current_mf[index]) in function 
+stm_tgt_reply().
+
+BUG6:
+Description: mptbase: ioc0: LogInfo(0x11070000): F/W: DMA Error
+Solution: Fully use of all the bytes of ioc->req_sz can cause DMA error, so reduce to 64. 
+reduce priv->num_sge_chain to 5 and priv->num_sge_targett_assist to 2 in 
+mpt_stm_adapter_install().
+
+BUG7:
+Description: use_sg can not bigger then NUM_SGES, or it would cause unpredictable failure.
+Solution: set tgt_template.sg_tablesize = NUM_SGES
+
+BUG8:
+Description: the inhibitation of tagged commands makes no effect.
+Solution: move mpt_inquiry_no_tagged_commands(sess->tgt->priv, scst_cmd) from 
+mpt_rdy_to_xfer() to mpt_xmit_response()
+
+BUG9:
+Description: scst: Unable to allocate or build requested buffer (size 1048576), sending BUSY 
+or QUEUE FULL status
+Solution: increase NUM_SGES from 64 to 256
+
+BUG10:
+Description: memory over flow in priv->hw->cmd_buf[index].chain_sge[NUM_SGES+NUM_CHAINS]
+Solution: since we only use 64 bytes in a request frame, there would be only 4 sges(12 bytes
+each) in one chain. #define NUM_CHAINS NUM_SGES/4 in mpt_scst.h
+
+BUG11:
+Description: status other than 00h(STS_GOOD) are all sent as 02h(STS_CHECK_CONDITION)
+Solution: store status code in CMD->rsp->Status in Function mpt_xmit_response().
+
+BUG12:
+Description: can't support /sys/kernel/scst_tgt/targets/mpt_scst/mpt_scst/enabled read/write
+Solution: create function mpt_stm_adapter_offline() to handle the disabling of target mode
+
+BUG13:
+Description: inquriy feedback info is limited to 8-bit asynchronized transfer
+Solution: modify bits in mpt_inquiry_no_tagged_commands() to enable 16-bit synchronized 
+transfer
+
+BUG14:
+Description: need an interface to set the SCSI ID.
+Solution: add some sysfs interfaces under /sys/kernel/scst_tgt/targets/mpt_scst/[target],
+now the SCSI ID can be set or read via port_id.
+
+BUG15:
+Description: returned "Device or resource busy" when writing to 'enabled' or 'port_id' in sysfs
+Solution: the return values in mpt_enable_tgt and mpt_port_id_store() are wrong. Fix them.
+
+BUG16:
+Description: Sometimes the system would hang up on "scst stop". This was caused by the mpt 
+target mode still enabled on calling the module_exit function.
+Solution: disable the mpt target driver in mpt_target_release().

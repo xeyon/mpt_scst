@@ -1,0 +1,1 @@
+cmd_/home/simex/workspace/mpt/mpt_scst.ko := ld -r -m elf_x86_64 -T /usr/src/linux-4.1.21-14/scripts/module-common.lds --build-id  -o /home/simex/workspace/mpt/mpt_scst.ko /home/simex/workspace/mpt/mpt_scst.o /home/simex/workspace/mpt/mpt_scst.mod.o
