@@ -27,8 +27,10 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 #include <asm/div64.h>
+
 #include <linux/spinlock.h>
-#endif
+
+#endif  // __linux__
 
 #define _HS_SLEEP ,0
 #define _IOC_ID ioc
@@ -181,10 +183,13 @@ typedef struct _MPT_STM_PRIV {
 	int			num_aliases;
 	MPT_STM_HW		*hw;
 	dma_addr_t		hw_dma;
+
 	spinlock_t	hw_lock;	// spinlock for hardware access
+
 	U64			wwnn;
 	U64			wwpn;
 	int			port_id;
+	int			work_id;
 	int			scsi_port_config;
 	int			scsi_id_config;
 	int			protocol;
@@ -333,8 +338,9 @@ typedef struct _MPT_STM_PRIV {
 #define MPT_TGT_ENABLE_64BIT_ADDR   1   /* 64-bits PCI addressing enabled */
 
 /* Session's flags */
-#define MPT_SESS_INITING            0   /* The session is being unregistered */
+#define MPT_SESS_INITING            0   /* The session is being registered */
 #define MPT_SESS_SHUTDOWN           1   /* The session is being unregistered */
+#define MPT_SESS_PENDING				 2   /* The session is being pended by other process */
 
 /* pending sense states */
 #define MPT_STATUS_SENSE_IDLE      0 /* no cached pending sense */

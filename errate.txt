@@ -8,7 +8,7 @@ mpt_proc_target_write().
 BUG2:
 Description: scst: ERROR: Can't add session to sysfs. Using security group "mpt_scst" for 
 initiator ""
-Solution: during scst session registering, set initiator name to "[ioc_name]->
+Solution: during scst session registering, set initiator name to "[ioc_name]_
 [initiator_id_num]" in stmapp_tgt_command().
 
 BUG3:
@@ -76,3 +76,24 @@ BUG16:
 Description: Sometimes the system would hang up on "scst stop". This was caused by the mpt 
 target mode still enabled on calling the module_exit function.
 Solution: disable the mpt target driver in mpt_target_release().
+
+BUG17:
+Description: the sysfs interface is not compatible with scst SysfsRules.
+Solution: mark port_id as a key attribute when it's not 1.
+
+BUG18:
+Description: in multiple initiator system, an Ext Bus Reset from other initiator may interrupt 
+current transaction and cause the scst_cmd can't normally release. This may goes to an exception
+not handled in stm_tgt_reply() and cause an system dump.
+Solution: add a branch to handle this exception.
+
+BUG19:
+Description: ***WARNING***: Target driver mpt_scst doesn't support Persistent Reservations
+Solution: add function mpt_get_transport_id() to support .get_initiator_port_transport_id
+
+BUG20:
+Description: When there're two SCSI cmd that need DMA transfer issues concurrently, the DMA 
+data phase may cause competition and crash the system.
+Solution: add priv->work_id to identify which initiator is currently served, and use const
+MPT_SESS_PENDING to indicate session pending. And the function mpt_alloc_session_done() is
+reused to launch the pended session queued cmds.
